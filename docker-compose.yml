@@ -1,0 +1,23 @@
+services:
+  app:
+    build: .
+    command: poetry run python -m solara run application/app.py --host 0.0.0.0 --port 8765 --no-open
+    ports:
+      - "8765:8765"
+    env_file:
+      - .env
+    volumes:
+      - ./application:/app/application
+      - ./outputs:/outputs
+      - mnist-cache:/root/.cache/torch
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  mnist-cache:
