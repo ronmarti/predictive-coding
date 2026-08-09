@@ -44,12 +44,14 @@ class SessionStore:
         device: torch.device,
         n_infer_iters: int,
         mu_dt: float,
+        auto_batch_size: int = 1,
     ) -> None:
         self._network = network
         self._dataset = dataset
         self._device = device
         self._n_infer_iters = n_infer_iters
         self._mu_dt = mu_dt
+        self._auto_batch_size = auto_batch_size
         # Current flat normalised tensor for the displayed digit
         self._current_tensor: Optional[torch.Tensor] = None
 
@@ -77,7 +79,7 @@ class SessionStore:
         _, errors = self._network.run_inference(
             img_tensor, target, self._n_infer_iters, self._mu_dt
         )
-        self._network.update_weights(errors, optimizer)
+        self._network.update_weights(errors, optimizer, self._auto_batch_size)
         samples_seen.value = samples_seen.value + 1
 
     def learn_batch(self, batch_size: int, optimizer) -> None:
@@ -88,7 +90,7 @@ class SessionStore:
         _, errors = self._network.run_inference(
             img_tensors, targets, self._n_infer_iters, self._mu_dt
         )
-        self._network.update_weights(errors, optimizer)
+        self._network.update_weights(errors, optimizer, batch_size)
         samples_seen.value = samples_seen.value + batch_size
 
     def learn_current(self, optimizer) -> None:
@@ -102,7 +104,9 @@ class SessionStore:
             self._n_infer_iters,
             self._mu_dt,
         )
-        self._network.update_weights(errors, optimizer)
+        # Normalise by auto_batch_size so one manual label = one sample in a
+        # mini-batch; keeps the gradient scale consistent across modes.
+        self._network.update_weights(errors, optimizer, self._auto_batch_size)
         samples_seen.value = samples_seen.value + 1
 
     def learn_with_label(self, label: int, optimizer) -> None:

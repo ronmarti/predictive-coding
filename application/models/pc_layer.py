@@ -48,17 +48,18 @@ class PcLayer:
         deriv = self._activation.deriv(self._pre_act)
         return (err_above * deriv) @ self.weights
 
-    def update_gradient(self, err_above: torch.Tensor) -> None:
+    def update_gradient(
+        self, err_above: torch.Tensor, norm_factor: int = 1
+    ) -> None:
         """Accumulate Hebbian weight/bias gradients from converged errors."""
         deriv = self._activation.deriv(self._pre_act)
         delta = err_above * deriv  # (batch, out)
-        batch_size = delta.shape[0]
         if "weights" not in self.grad:
             self.grad["weights"] = torch.zeros_like(self.weights)
             self.grad["biases"] = torch.zeros_like(self.biases)
-        # Normalise by batch size so lr is batch-size independent
-        self.grad["weights"] += (delta.T @ self._inp) / batch_size
-        self.grad["biases"] += delta.mean(dim=0)
+        # norm_factor keeps the gradient scale consistent across batch sizes
+        self.grad["weights"] += (delta.T @ self._inp) / norm_factor
+        self.grad["biases"] += delta.sum(dim=0) / norm_factor
 
     def zero_grad(self) -> None:
         """Reset accumulated gradients."""

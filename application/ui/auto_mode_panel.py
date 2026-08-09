@@ -15,11 +15,6 @@ def AutoModePanel(session, auto_runner, optimizer) -> None:
             store.status_message.value = "Auto mode active — learning…"
         else:
             auto_runner.stop()
-            # Reset Adam moments: auto mode uses batch-averaged gradients
-            # (scale ~1/64); manual mode uses raw single-sample gradients
-            # (~64x larger). Without a reset, Adam applies a mismatched
-            # huge step and overwrites learned weights after just one label.
-            optimizer.reset()
             session.advance_sample()
             store.status_message.value = "Auto mode stopped."
 

@@ -140,6 +140,29 @@ A live Plotly chart with two y-axes:
 
 Both are plotted against **samples seen** (not epochs — the model never repeats in order). The upward accuracy trend and downward loss trend demonstrate continual learning in action.
 
+#### How accuracy and loss are measured
+
+Evaluation runs on the standard **MNIST test set (10,000 held-out samples)** using a **forward-only pass** — no inference loop, no clamped target, no weight update.
+
+| Data split | Size | Role |
+|---|---|---|
+| MNIST training set | 60,000 | Weight updates (random sampling with replacement) |
+| MNIST test set | 10,000 | Evaluation only — never used for learning |
+
+**Accuracy** = fraction of test digits where `argmax(logits) == true label`.
+
+**Loss** = mean cross-entropy over all 10,000 test samples. Because cross-entropy penalises low confidence rather than just wrong argmax, loss can rise even while accuracy stays flat — the model is becoming less certain without yet making new mistakes.
+
+Evaluation is triggered:
+- **Auto mode** — every `EVAL_INTERVAL` *samples* (e.g. with `AUTO_BATCH_SIZE=64` and `EVAL_INTERVAL=100`, this fires roughly every 2 batches)
+- **Manual mode** — after every label click
+
+#### Why accuracy may temporarily dip when switching from auto to manual mode
+
+In auto mode the network trains on mini-batches of `AUTO_BATCH_SIZE` samples at once; each sample contributes `1/AUTO_BATCH_SIZE` of the total gradient. In manual mode there is only 1 sample, but the gradient is deliberately normalised by the same `AUTO_BATCH_SIZE` factor so the effective weight change per example is identical across modes and Adam’s internal moment estimates remain valid without a reset.
+
+Even so, a small transient dip is normal when you first switch: the model has found a generalisation equilibrium tuned to the distribution of 64-sample mini-batches, and any new single-sample signal slightly perturbs that equilibrium. Continued labelling will restore and eventually improve accuracy, just as it did in auto mode.
+
 ### Weights panel
 
 See [Saving and loading weights](#saving-and-loading-weights).

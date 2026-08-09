@@ -50,7 +50,8 @@ _dataset = MnistDataset(_device)
 logger.info("Dataset ready.")
 
 _session = SessionStore(
-    _network, _dataset, _device, _cfg.n_infer_iters, _cfg.mu_dt
+    _network, _dataset, _device, _cfg.n_infer_iters, _cfg.mu_dt,
+    auto_batch_size=_cfg.auto_batch_size,
 )
 _evaluator = Evaluator(_network, _dataset, _device)
 _auto_runner = AutoRunner(

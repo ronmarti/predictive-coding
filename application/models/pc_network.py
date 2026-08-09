@@ -91,12 +91,13 @@ class PcNetwork:
         self,
         errors: list[torch.Tensor],
         optimizer: AdamOptimizer,
+        norm_factor: int = 1,
     ) -> None:
         """Accumulate and apply Hebbian weight updates via optimizer."""
         for layer in self.layers:
             layer.zero_grad()
         for i, layer in enumerate(self.layers):
-            layer.update_gradient(errors[i])
+            layer.update_gradient(errors[i], norm_factor)
         optimizer.step(self.layers)
 
     # ------------------------------------------------------------------
