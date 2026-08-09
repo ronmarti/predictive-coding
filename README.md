@@ -144,31 +144,46 @@ Both are plotted against **samples seen** (not epochs — the model never repeat
 
 See [Saving and loading weights](#saving-and-loading-weights).
 
+### Hyperparameters panel
+
+A collapsible card at the bottom of the page exposes the four runtime-tunable parameters. Changes take effect **immediately** on the live network — no container restart required.
+
+| Control | What it does |
+|---|---|
+| **Auto batch size** | Number of training samples processed together in one weight update during auto mode. Larger values give a more stable Hebbian gradient estimate and better GPU utilisation. Has no effect in manual (human-in-the-loop) mode where each sample is processed one at a time. |
+| **Inference iterations T** | How many gradient-descent steps the inference loop takes on the latent states $\mu_l$ before applying a weight update. More iterations bring the prediction errors closer to zero, producing a more accurate gradient, but reduce throughput. Think of this as the "inner loop" convergence budget. |
+| **Inference step size μ_dt** | The learning rate of the *inner* inference loop — how far each latent state $\mu_l$ moves per iteration toward minimising its layer's prediction error. Larger values converge faster but can overshoot and oscillate. This is distinct from the outer weight learning rate. |
+| **Learning rate** | The Adam step size applied to synaptic weights *after* inference has converged. This is the "outer" learning rate. Spans multiple orders of magnitude so a numeric text field is used rather than a slider. |
+
+These four parameters can also be set as defaults in `.env` (see [Configuration parameters](#configuration-parameters)) so they take effect from the first sample without manual adjustment in the UI.
+
 ---
 
 ## Configuration parameters
 
-All parameters are set in `.env`. Edit and restart the container (`docker compose up`) to apply changes.
+All parameters are set in `.env`. Restart the container (`docker compose up`) to apply `.env` changes. The four marked ★ can also be changed live in the **Hyperparameters** panel without a restart.
 
-| Variable | Default | Description |
-|---|---|---|
-| `NODES` | `784,300,100,10` | Comma-separated layer widths. First must be 784 (MNIST input), last must be 10 (digit classes). Add/remove values to change depth. |
-| `MU_DT` | `0.01` | Inference step size $\gamma_\mu$. Smaller = more stable but slower convergence per sample. |
-| `N_INFER_ITERS` | `50` | Number of inference loop iterations $T$ per sample. More iterations = better gradient estimate for weight update, but slower. |
-| `LR` | `0.0001` | Adam learning rate for weight updates. |
-| `ACTIVATION` | `relu` | Hidden layer activation. Options: `relu`, `tanh`. |
-| `EVAL_INTERVAL` | `100` | Auto mode only: number of samples between full test-set evaluations. Lower = more frequent chart updates but slower throughput. |
-| `DEVICE` | `cuda` | Compute device. Falls back to `cpu` automatically if CUDA is unavailable. |
-| `LOG_LEVEL` | `INFO` | Python logging level: `DEBUG`, `INFO`, `WARNING`. |
+| Variable | Default | ★ | Description |
+|---|---|---|---|
+| `NODES` | `784,300,100,10` | | Comma-separated layer widths. First must be 784 (MNIST input), last must be 10 (digit classes). Add/remove values to change depth. |
+| `MU_DT` | `0.01` | ★ | Inference step size $\gamma_\mu$. Smaller = more stable but slower convergence per sample. |
+| `N_INFER_ITERS` | `50` | ★ | Number of inference loop iterations $T$ per sample. More iterations = better gradient estimate for weight update, but slower. |
+| `LR` | `0.0001` | ★ | Adam learning rate for weight updates. |
+| `AUTO_BATCH_SIZE` | `64` | ★ | Mini-batch size used in auto mode. Larger values improve GPU utilisation. Has no effect in manual mode. |
+| `ACTIVATION` | `relu` | | Hidden layer activation. Options: `relu`, `tanh`. |
+| `EVAL_INTERVAL` | `100` | | Auto mode only: number of *samples* (not batches) between full test-set evaluations. |
+| `DEVICE` | `cuda` | | Compute device. Falls back to `cpu` automatically if CUDA is unavailable. |
+| `LOG_LEVEL` | `INFO` | | Python logging level: `DEBUG`, `INFO`, `WARNING`. |
 
 ### Recommended experiments
 
 | Goal | Change |
 |---|---|
 | Shallow vs deep comparison | Run with `NODES=784,10`, then `NODES=784,300,100,10` |
-| Faster auto mode | Reduce `N_INFER_ITERS=20` and `EVAL_INTERVAL=50` |
-| More stable learning | Increase `N_INFER_ITERS=100`, reduce `LR=0.00005` |
+| Faster auto mode | Reduce `N_INFER_ITERS` to 20 and `EVAL_INTERVAL` to 50 |
+| More stable learning | Increase `N_INFER_ITERS` to 100, reduce `LR` to 5e-5 |
 | Tanh dynamics | Set `ACTIVATION=tanh` |
+| Better GPU utilisation | Increase `AUTO_BATCH_SIZE` to 128 or 256 |
 
 ---
 
@@ -180,7 +195,7 @@ predictive-coding/
 ├── docker-compose.yml            # GPU passthrough, port 8765, volume mounts
 ├── pyproject.toml                # Python dependencies
 ├── .env                          # Runtime configuration (edit this)
-├── outputs/                      # Saved weight files (.pt) — Docker-mounted
+├── outputs/                      # Saved weight files (.safetensors) — Docker-mounted
 └── application/
     ├── app.py                    # Solara Page() — top-level UI layout
     ├── config.py                 # Config dataclass reading from env vars
@@ -198,9 +213,10 @@ predictive-coding/
     ├── ui/
     │   ├── digit_display.py      # Digit image + confidence bar chart
     │   ├── label_input.py        # 0–9 label buttons + Skip
-    │   ├── auto_mode_panel.py    # Auto mode checkbox + status text
+    │   ├── auto_mode_panel.py    # Auto mode checkbox
     │   ├── accuracy_loss_chart.py # Live Plotly dual-axis chart
-    │   └── weights_panel.py      # Save/Load weight files
+    │   ├── weights_panel.py      # Save/Load weight files (safetensors)
+    │   └── hyperparams_panel.py  # Live-editable T, μ_dt, lr, batch size
     └── utils/
         └── logging_config.py     # Structured logging setup
 ```

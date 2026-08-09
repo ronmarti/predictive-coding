@@ -64,6 +64,14 @@ class PcLayer:
         """Reset accumulated gradients."""
         self.grad = {}
 
+    def reset(self) -> None:
+        """Reinitialise weights (Xavier uniform) and biases (zero)."""
+        in_dim, out_dim = self.weights.shape[1], self.weights.shape[0]
+        limit = math.sqrt(6.0 / (in_dim + out_dim))
+        self.weights.uniform_(-limit, limit)
+        self.biases.zero_()
+        self.grad = {}
+
     def to(self, device: torch.device) -> "PcLayer":
         """Move weights and biases to device in-place."""
         self._device = device

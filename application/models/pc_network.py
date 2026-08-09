@@ -126,6 +126,11 @@ class PcNetwork:
             layer.to(device)
         return self
 
+    def reset(self) -> None:
+        """Reinitialise all layer weights and biases to their initial distribution."""
+        for layer in self.layers:
+            layer.reset()
+
     def state_dict(self) -> list[dict]:
         """Return serialisable state for all layers."""
         return [layer.state_dict() for layer in self.layers]

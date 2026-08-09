@@ -19,6 +19,7 @@ from application.models.pc_optimizer import AdamOptimizer
 from application.ui.accuracy_loss_chart import AccuracyLossChart
 from application.ui.auto_mode_panel import AutoModePanel
 from application.ui.digit_display import DigitDisplay
+from application.ui.hyperparams_panel import HyperparamsPanel
 from application.ui.label_input import LabelInput
 from application.ui.weights_panel import WeightsPanel
 from application.utils.logging_config import configure_logging
@@ -92,9 +93,19 @@ def Page() -> None:
                 evaluator=_evaluator,
                 optimizer=_optimizer,
             )
-            AutoModePanel(session=_session, auto_runner=_auto_runner)
+            AutoModePanel(
+                session=_session,
+                auto_runner=_auto_runner,
+                optimizer=_optimizer,
+            )
 
         with solara.Card("Learning progress"):
             AccuracyLossChart()
 
-        WeightsPanel(network=_network, session=_session)
+        WeightsPanel(network=_network, optimizer=_optimizer, session=_session)
+
+        HyperparamsPanel(
+            session=_session,
+            optimizer=_optimizer,
+            auto_runner=_auto_runner,
+        )

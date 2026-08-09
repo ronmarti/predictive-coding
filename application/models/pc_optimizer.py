@@ -20,6 +20,12 @@ class AdamOptimizer:
         self._m: dict[int, dict[str, torch.Tensor]] = {}
         self._v: dict[int, dict[str, torch.Tensor]] = {}
 
+    def reset(self) -> None:
+        """Clear accumulated moment estimates so a fresh network starts clean."""
+        self._t = 0
+        self._m = {}
+        self._v = {}
+
     def step(self, layers: list[PcLayer]) -> None:
         """Apply one Adam update step to all layers with accumulated grads."""
         self._t += 1

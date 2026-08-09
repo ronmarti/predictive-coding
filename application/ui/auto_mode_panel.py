@@ -4,7 +4,7 @@ from application.logic import session_store as store
 
 
 @solara.component
-def AutoModePanel(session, auto_runner) -> None:
+def AutoModePanel(session, auto_runner, optimizer) -> None:
     """Checkbox that toggles auto (background) learning mode."""
     auto = solara.use_reactive(store.auto_mode)
 
@@ -15,7 +15,11 @@ def AutoModePanel(session, auto_runner) -> None:
             store.status_message.value = "Auto mode active — learning…"
         else:
             auto_runner.stop()
-            # Load a fresh sample so manual controls have something to show
+            # Reset Adam moments: auto mode uses batch-averaged gradients
+            # (scale ~1/64); manual mode uses raw single-sample gradients
+            # (~64x larger). Without a reset, Adam applies a mismatched
+            # huge step and overwrites learned weights after just one label.
+            optimizer.reset()
             session.advance_sample()
             store.status_message.value = "Auto mode stopped."
 

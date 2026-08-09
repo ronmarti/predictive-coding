@@ -11,8 +11,8 @@ OUTPUTS_DIR = Path("/outputs")
 
 
 @solara.component
-def WeightsPanel(network, session) -> None:
-    """Save and load network weights."""
+def WeightsPanel(network, optimizer, session) -> None:
+    """Save, load, and reset network weights."""
     selected_path = solara.use_reactive(store.weights_file_path)
     show_browser, set_show_browser = solara.use_state(False)
     status = solara.use_reactive(store.status_message)
@@ -48,6 +48,14 @@ def WeightsPanel(network, session) -> None:
         store.status_message.value = f"Loaded \u2190 {path.name}"
         set_show_browser(False)
 
+    def on_reset() -> None:
+        network.reset()
+        optimizer.reset()
+        store.history.value = []
+        store.samples_seen.value = 0
+        session.advance_sample()
+        store.status_message.value = "Weights reset to random initialisation."
+
     def on_file_selected(path: Path) -> None:
         store.weights_file_path.value = path
 
@@ -59,6 +67,7 @@ def WeightsPanel(network, session) -> None:
                 on_click=lambda: set_show_browser(not show_browser),
                 color="secondary",
             )
+            solara.Button("Reset", on_click=on_reset, color="error")
 
         if show_browser:
             solara.FileBrowser(
