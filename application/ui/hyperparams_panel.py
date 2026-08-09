@@ -38,7 +38,7 @@ def HyperparamsPanel(session, optimizer, auto_runner) -> None:
                 "Auto batch size",
                 value=batch_size,
                 min=1,
-                max=512,
+                max=65536,
                 on_value=on_batch_size,
             )
             solara.Text(
